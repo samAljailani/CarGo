@@ -13,26 +13,43 @@ function CreateRoutesToExit(exit){
 }
 
 //Deth-first search to get the connected directed graph that leeds to this exit
-function createRoute(vertex, exit, subgraph, distanceToExit){
-    if(vertex.incomingEdges == undefined) return;
-    vertex.label = VISITED;
+function createRoute(vertex, exit, subgraph, distanceToExit) {
+    if (vertex.incomingEdges == undefined) return;
 
-    subgraph.push(vertex);
-    for(let edge of vertex.incomingEdges){
-        if(edge.label == UNEXPLORED){
-            edge.label = VISITED;
-            let oppositeVertex = edge.endVertex;
-            if(!isVertex(oppositeVertex)) continue;
-            let dist = edge.distanceFromEndVertex + distanceToExit;
-            oppositeVertex.routableExits.push({exit: exit, outgoingEdge:edge.outgoingEdge, distanceFromExit: dist});
-            if(oppositeVertex.label == UNEXPLORED){
-                oppositeVertex.label = VISITED;
-                createRoute(oppositeVertex,exit, subgraph, dist);
+    let queue = [];
+    vertex.label = VISITED;
+    queue.push({ vertex: vertex, distanceToExit: distanceToExit });
+
+    while (queue.length > 0) {
+        let current = queue.shift();
+        let currentVertex = current.vertex;
+        let currentDistance = current.distanceToExit;
+
+        subgraph.push(currentVertex);
+
+        for (let edge of currentVertex.incomingEdges) {
+            if (edge.label == UNEXPLORED) {
+                edge.label = VISITED;
+                let oppositeVertex = edge.endVertex;
+                
+                if (!isVertex(oppositeVertex)) continue;
+
+                let dist = edge.distanceFromEndVertex + currentDistance;
+
+                let existingRoute = oppositeVertex.routableExits.find(re => re.exit === exit);
+                if (!existingRoute || dist < existingRoute.distanceFromExit) {
+                    oppositeVertex.routableExits.push({ exit: exit, outgoingEdge: edge.outgoingEdge, distanceFromExit: dist });
+                }
+
+                if (oppositeVertex.label == UNEXPLORED) {
+                    oppositeVertex.label = VISITED;
+                    queue.push({ vertex: oppositeVertex, distanceToExit: dist });
+                }
             }
         }
-            
     }
 }
+
 function removeLabels(vertices){
     for(let vertex of vertices){
         vertex.label = undefined;
